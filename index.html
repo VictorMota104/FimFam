@@ -167,6 +167,10 @@
     font-family:var(--sans); font-size:14px; font-weight:700;
     display:flex; align-items:center; justify-content:center; gap:5px;}
   .row-actions button:active{filter:brightness(.88);}
+  .row-actions button{transition:background .12s var(--ease);}
+  .row.armed .row-actions button{background:#96311F;}      /* mais escuro/intenso: soltar já apaga */
+  .row.armed .row-actions button svg{animation:killTick .32s var(--ease);}
+  @keyframes killTick{0%{transform:scale(1);}50%{transform:scale(1.35);}100%{transform:scale(1);}}
 
   /* espelho do painel de apagar: deslizar pra direita marca/desmarca */
   .row-check{position:absolute; top:0; left:0; bottom:0; width:var(--action-w);
@@ -808,7 +812,8 @@
    * DESLIZAR PARA APAGAR (esquerda) E MARCAR/DESMARCAR (direita)
    * ========================================================= */
   const ACTION_W = 92;
-  const CHECK_TRIGGER = 56;   // distância pra direita que já dispara o toggle
+  const CHECK_TRIGGER = 56;    // distância pra direita que já dispara o toggle
+  const KILL_TRIGGER = -152;   // deslizar bem além do botão já apaga direto
   let drag = null, openRow = null;
   const offOf = el => Number(el.dataset.off || 0);
   function setOff(el,x){ el.dataset.off = x; el.style.transform = "translateX("+x+"px)"; }
@@ -875,15 +880,32 @@
     }
     if(x < -ACTION_W) x = -ACTION_W + (x + ACTION_W)*0.25;
     setOff(drag.main, x);
+    const row = drag.main.closest(".row");
+    if(row) row.classList.toggle("armed", x <= KILL_TRIGGER);
   }, {passive:false});
+
+  function commitDelete(main){
+    const row = main.closest(".row");
+    if(!row) return;
+    main.classList.add("animate");
+    main.style.transition = "transform .18s ease-in, opacity .18s ease-in";
+    setOff(main, -420);
+    main.style.opacity = "0";
+    const {scope, list, id} = row.dataset;
+    setTimeout(()=> removeItem(scope, list, id), 170);
+  }
 
   function endDrag(){
     if(!drag) return;
     const d = drag; drag = null;
     if(d.dir !== "h") return;
+    const row = d.main.closest(".row");
+    if(row) row.classList.remove("armed");
     d.main.classList.add("animate");
     const x = offOf(d.main);
-    if(d.checkable && x > CHECK_TRIGGER){
+    if(x <= KILL_TRIGGER){
+      commitDelete(d.main);
+    } else if(d.checkable && x > CHECK_TRIGGER){
       toggleBySwipe(d.main);
       closeRow(d.main);
     } else if(x < -ACTION_W*0.4){
