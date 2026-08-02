@@ -1,0 +1,12 @@
+{
+  "name": "financas-pf-pj",
+  "version": "1.0.0",
+  "description": "App de controle financeiro PF/PJ (PWA)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
