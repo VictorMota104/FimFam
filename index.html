@@ -178,7 +178,6 @@
     background:var(--accent); color:var(--accent-ink); visibility:hidden;}
   .row-check.undo{background:var(--muted); color:#171209;}
   .row.reveal-left .row-check{visibility:visible;}
-  .row-check svg{width:22px; height:22px;}
 
   .row-main{position:relative; z-index:1; background:var(--surface);
     display:flex; align-items:center; gap:12px; min-height:56px; padding:6px 16px;
@@ -301,6 +300,24 @@
     max-width:508px; margin:0 auto;}
   .toast.show{transform:translateY(0);}
   .toast[hidden]{display:none;}
+
+  /* bolha que segue o dedo no gesto de borda, no mesmo estilo dos carimbos PF/PJ */
+  .edge-bubble{
+    position:fixed; z-index:95; width:76px; height:76px; margin:-38px 0 0 -38px;
+    border-radius:50%; border:2px solid var(--muted-2); background:var(--surface-3);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--serif); font-weight:700; font-size:14px; letter-spacing:.6px;
+    color:var(--muted); text-transform:uppercase; pointer-events:none;
+    opacity:0; transform:scale(.7);
+    transition:opacity .16s var(--ease), transform .16s var(--ease),
+               background .16s var(--ease), color .16s var(--ease), border-color .16s var(--ease);
+    box-shadow:0 8px 22px rgba(0,0,0,.4);
+  }
+  .edge-bubble[hidden]{display:none;}
+  .edge-bubble::before{content:""; position:absolute; inset:6px; border:1.5px dashed currentColor;
+    border-radius:50%; opacity:.5;}
+  .edge-bubble.show{opacity:1; transform:scale(1);}
+  .edge-bubble.armed{background:var(--bubble-accent); color:var(--bubble-ink); border-color:transparent; transform:scale(1.14);}
   .toast span{font-size:14px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .toast button{flex-shrink:0; min-height:36px; padding:0 14px; border-radius:9px; border:none;
     background:var(--accent); color:var(--accent-ink);
@@ -350,6 +367,7 @@
 
 <div class="kb" id="kb"><button type="button" id="kbDone">Concluir</button></div>
 <div class="toast" id="toast" hidden><span id="toastMsg"></span><button type="button" id="toastUndo">Desfazer</button></div>
+<div class="edge-bubble" id="edgeBubble" hidden></div>
 <div class="scrim" id="scrim" hidden></div>
 <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-label="Editar seção"></div>
 
@@ -534,7 +552,7 @@
     return `
     <li class="row ${checkable && it.pago ? 'paid':''}" data-scope="${scope}" data-list="${listId}" data-id="${it.id}"
         data-checkable="${checkable ? 'true':'false'}">
-      ${checkable ? `<div class="row-check ${it.pago ? 'undo':''}" aria-hidden="true">${it.pago ? ico.uncheck : ico.check}</div>` : ``}
+      ${checkable ? `<div class="row-check ${it.pago ? 'undo':''}" aria-hidden="true"></div>` : ``}
       <div class="row-actions">
         <button type="button" data-act="del" data-scope="${scope}" data-list="${listId}" data-id="${it.id}"
                 aria-label="Apagar ${esc(it.name)}">${ico.trash} Apagar</button>
@@ -857,7 +875,7 @@
       setTimeout(()=> chk.classList.remove("pulse"), 260);
     }
     const rc = row.querySelector(".row-check");
-    if(rc){ rc.classList.toggle("undo", it.pago); rc.innerHTML = it.pago ? ico.uncheck : ico.check; }
+    if(rc) rc.classList.toggle("undo", it.pago);
     refresh();
   }
 
@@ -1167,12 +1185,24 @@
     const EDGE_ZONE = 24;   // só começa se o toque nascer perto da borda direita da tela
     const TRIGGER = 70;     // distância mínima puxando pra dentro que confirma a troca
     let eg = null;
+    const bubble = document.getElementById("edgeBubble");
+
+    function targetInfo(){
+      const target = state.view === "pf" ? "pj" : "pf";
+      return target === "pf"
+        ? {label:"PF", accent:"#6FAE87", ink:"#0B1C13"}
+        : {label:"PJ", accent:"#C99A3E", ink:"#241804"};
+    }
+    function hideBubble(){
+      bubble.classList.remove("show","armed");
+      setTimeout(()=>{ bubble.hidden = true; }, 180);
+    }
 
     document.addEventListener("touchstart", e=>{
       if(drag || openRow || sheetCtx) return;       // não briga com outros gestos em andamento
       const t = e.touches[0];
       if(t.clientX < window.innerWidth - EDGE_ZONE) return;
-      eg = {x:t.clientX, y:t.clientY, dir:null};
+      eg = {x:t.clientX, y:t.clientY, dir:null, armed:false};
     }, {passive:true});
 
     document.addEventListener("touchmove", e=>{
@@ -1183,7 +1213,18 @@
         if(Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
         eg.dir = Math.abs(dx) > Math.abs(dy)*1.2 ? "h" : "v";
         if(eg.dir !== "h"){ eg = null; return; }
+        const info = targetInfo();
+        bubble.textContent = info.label;
+        bubble.style.setProperty("--bubble-accent", info.accent);
+        bubble.style.setProperty("--bubble-ink", info.ink);
+        bubble.hidden = false;
+        requestAnimationFrame(()=> bubble.classList.add("show"));
       }
+      if(eg.dir !== "h") return;
+      bubble.style.left = t.clientX + "px";
+      bubble.style.top = t.clientY + "px";
+      const armed = dx <= -TRIGGER;
+      if(armed !== eg.armed){ eg.armed = armed; bubble.classList.toggle("armed", armed); }
     }, {passive:true});
 
     function endEdge(e){
@@ -1191,13 +1232,15 @@
       const t = e.changedTouches[0];
       const dx = t.clientX - eg.x;
       const wasH = eg.dir === "h";
+      const wasArmed = eg.armed;
       eg = null;
-      if(wasH && dx <= -TRIGGER){
+      if(wasH) hideBubble();
+      if(wasH && wasArmed && dx <= -TRIGGER){
         switchView(state.view === "pf" ? "pj" : "pf");
       }
     }
     document.addEventListener("touchend", endEdge, {passive:true});
-    document.addEventListener("touchcancel", ()=>{ eg = null; }, {passive:true});
+    document.addEventListener("touchcancel", ()=>{ if(eg){ hideBubble(); eg = null; } }, {passive:true});
   })();
 
   /* ============================================================
@@ -1299,7 +1342,7 @@
       const rowEl = el.closest(".row");
       rowEl.classList.toggle("paid", it.pago);
       const rc = rowEl.querySelector(".row-check");
-      if(rc){ rc.classList.toggle("undo", it.pago); rc.innerHTML = it.pago ? ico.uncheck : ico.check; }
+      if(rc) rc.classList.toggle("undo", it.pago);
       refresh();
       return;
     }
