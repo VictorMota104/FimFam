@@ -1153,6 +1153,53 @@
     sheet.addEventListener("touchcancel", end, {passive:true});
   })();
 
+  function switchView(v){
+    if(state.view === v) return;
+    state.view = v; save(); render();
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  /* ============================================================
+   * DESLIZAR DA BORDA DIREITA PARA ALTERNAR PF/PJ
+   * (acessibilidade: dispensa alcançar os carimbos lá em cima)
+   * ========================================================= */
+  (function edgeSwipe(){
+    const EDGE_ZONE = 24;   // só começa se o toque nascer perto da borda direita da tela
+    const TRIGGER = 70;     // distância mínima puxando pra dentro que confirma a troca
+    let eg = null;
+
+    document.addEventListener("touchstart", e=>{
+      if(drag || openRow || sheetCtx) return;       // não briga com outros gestos em andamento
+      const t = e.touches[0];
+      if(t.clientX < window.innerWidth - EDGE_ZONE) return;
+      eg = {x:t.clientX, y:t.clientY, dir:null};
+    }, {passive:true});
+
+    document.addEventListener("touchmove", e=>{
+      if(!eg) return;
+      const t = e.touches[0];
+      const dx = t.clientX - eg.x, dy = t.clientY - eg.y;
+      if(!eg.dir){
+        if(Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        eg.dir = Math.abs(dx) > Math.abs(dy)*1.2 ? "h" : "v";
+        if(eg.dir !== "h"){ eg = null; return; }
+      }
+    }, {passive:true});
+
+    function endEdge(e){
+      if(!eg) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - eg.x;
+      const wasH = eg.dir === "h";
+      eg = null;
+      if(wasH && dx <= -TRIGGER){
+        switchView(state.view === "pf" ? "pj" : "pf");
+      }
+    }
+    document.addEventListener("touchend", endEdge, {passive:true});
+    document.addEventListener("touchcancel", ()=>{ eg = null; }, {passive:true});
+  })();
+
   /* ============================================================
    * BARRA CONCLUIR
    * ========================================================= */
@@ -1234,9 +1281,7 @@
     const {act, scope, list, id} = el.dataset;
 
     if(act === "view"){
-      if(state.view === el.dataset.view) return;
-      state.view = el.dataset.view; save(); render();
-      window.scrollTo({top:0, behavior:"smooth"});
+      switchView(el.dataset.view);
       return;
     }
     if(act === "fold"){
