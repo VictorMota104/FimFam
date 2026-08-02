@@ -172,6 +172,7 @@
   .row-check{position:absolute; top:0; left:0; bottom:0; width:var(--action-w);
     display:flex; align-items:center; justify-content:center;
     background:var(--accent); color:var(--accent-ink); visibility:hidden;}
+  .row-check.undo{background:var(--muted); color:#171209;}
   .row.swiping .row-check{visibility:visible;}
   .row-check svg{width:22px; height:22px;}
 
@@ -421,8 +422,8 @@
         taxaProLabore:0.28, taxaDAS:0.06, taxaINSS:0.11,
         open:{fixas:true, variaveis:true},
         categories:[
-          {id:"fixas", name:"Custos fixos", color:"#C99A3E", items:[{id:uid(), name:"Contador", valor:250}]},
-          {id:"variaveis", name:"Variáveis", color:"#6F93B8", items:[{id:uid(), name:"Abertura ME", valor:250}]},
+          {id:"fixas", name:"Custos fixos", color:"#C99A3E", items:[{id:uid(), name:"Contador", valor:250, pago:false}]},
+          {id:"variaveis", name:"Variáveis", color:"#6F93B8", items:[{id:uid(), name:"Abertura ME", valor:250, pago:false}]},
         ]
       }
     };
@@ -454,12 +455,14 @@
     if(!s.pj.open) s.pj.open = {};
     if(typeof s.hintSeen !== "boolean") s.hintSeen = false;
 
-    // garante id e cor em toda seção
+    // garante id e cor em toda seção, e o campo "pago" em toda despesa
+    // (o PJ passou a ter check também — dados salvos antes disso não tinham o campo)
     [s.pf, s.pj].forEach(b=>{
       b.categories.forEach((c,i)=>{
         if(!c.id) c.id = uid();
         if(!c.color) c.color = CORES[i % CORES.length];
         if(!Array.isArray(c.items)) c.items = [];
+        c.items.forEach(it=>{ if(typeof it.pago !== "boolean") it.pago = false; });
       });
     });
     return s;
@@ -527,7 +530,7 @@
     return `
     <li class="row ${checkable && it.pago ? 'paid':''}" data-scope="${scope}" data-list="${listId}" data-id="${it.id}"
         data-checkable="${checkable ? 'true':'false'}">
-      ${checkable ? `<div class="row-check" aria-hidden="true">${it.pago ? ico.uncheck : ico.check}</div>` : ``}
+      ${checkable ? `<div class="row-check ${it.pago ? 'undo':''}" aria-hidden="true">${it.pago ? ico.uncheck : ico.check}</div>` : ``}
       <div class="row-actions">
         <button type="button" data-act="del" data-scope="${scope}" data-list="${listId}" data-id="${it.id}"
                 aria-label="Apagar ${esc(it.name)}">${ico.trash} Apagar</button>
@@ -686,7 +689,7 @@
 
     ${pj.categories.map(cat=>cardHTML({
       scope:"pj", id:cat.id, name:cat.name, color:cat.color, items:cat.items,
-      total:sum(cat.items), open:!!pj.open[cat.id], checkable:false
+      total:sum(cat.items), open:!!pj.open[cat.id], checkable:true
     })).join("")}
 
     <button type="button" class="add strong" data-act="new-sect" data-scope="pj">
@@ -833,7 +836,7 @@
       setTimeout(()=> chk.classList.remove("pulse"), 260);
     }
     const rc = row.querySelector(".row-check");
-    if(rc) rc.innerHTML = it.pago ? ico.uncheck : ico.check;
+    if(rc){ rc.classList.toggle("undo", it.pago); rc.innerHTML = it.pago ? ico.uncheck : ico.check; }
     refresh();
   }
 
@@ -1200,7 +1203,7 @@
       const rowEl = el.closest(".row");
       rowEl.classList.toggle("paid", it.pago);
       const rc = rowEl.querySelector(".row-check");
-      if(rc) rc.innerHTML = it.pago ? ico.uncheck : ico.check;
+      if(rc){ rc.classList.toggle("undo", it.pago); rc.innerHTML = it.pago ? ico.uncheck : ico.check; }
       refresh();
       return;
     }
@@ -1226,7 +1229,7 @@
     if(act === "add"){
       const l = listOf(scope, list); if(!l) return;
       const novo = {id:uid(), name:"", valor:0};
-      if(scope === "pf" && list !== "__rendas") novo.pago = false;
+      if(list !== "__rendas") novo.pago = false;
       l.push(novo);
       state[scope].open[list] = true;
       save(); render();
