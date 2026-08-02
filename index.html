@@ -168,6 +168,13 @@
     display:flex; align-items:center; justify-content:center; gap:5px;}
   .row-actions button:active{filter:brightness(.88);}
 
+  /* espelho do painel de apagar: deslizar pra direita marca/desmarca */
+  .row-check{position:absolute; top:0; left:0; bottom:0; width:var(--action-w);
+    display:flex; align-items:center; justify-content:center;
+    background:var(--accent); color:var(--accent-ink); visibility:hidden;}
+  .row.swiping .row-check{visibility:visible;}
+  .row-check svg{width:22px; height:22px;}
+
   .row-main{position:relative; z-index:1; background:var(--surface);
     display:flex; align-items:center; gap:12px; min-height:56px; padding:6px 16px;
     touch-action:pan-y;}
@@ -186,6 +193,8 @@
   .check[aria-checked="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
   .check[aria-checked="true"] svg{opacity:1; transform:scale(1);}
   .check:active{transform:scale(.9);}
+  .check.pulse{animation:checkPulse .26s var(--ease);}
+  @keyframes checkPulse{0%{transform:scale(1);}45%{transform:scale(1.3);}100%{transform:scale(1);}}
   .check:focus-visible{outline:2px solid var(--accent); outline-offset:3px;}
 
   .row-name{flex:1; min-width:0; background:transparent; border:none; color:var(--text);
@@ -504,6 +513,7 @@
     pencil:'<svg class="edit-hint" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
     trash:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M9 7V4.6c0-.4.3-.6.7-.6h4.6c.4 0 .7.2.7.6V7M17.5 7l-.7 12c0 .8-.7 1.5-1.5 1.5H8.7c-.8 0-1.5-.7-1.5-1.5L6.5 7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     swipe:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    uncheck:'<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>',
     dots: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>',
   };
   const esc = s => String(s ?? "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
@@ -515,7 +525,9 @@
 
   function rowHTML(scope, listId, it, checkable){
     return `
-    <li class="row ${checkable && it.pago ? 'paid':''}" data-scope="${scope}" data-list="${listId}" data-id="${it.id}">
+    <li class="row ${checkable && it.pago ? 'paid':''}" data-scope="${scope}" data-list="${listId}" data-id="${it.id}"
+        data-checkable="${checkable ? 'true':'false'}">
+      ${checkable ? `<div class="row-check" aria-hidden="true">${it.pago ? ico.uncheck : ico.check}</div>` : ``}
       <div class="row-actions">
         <button type="button" data-act="del" data-scope="${scope}" data-list="${listId}" data-id="${it.id}"
                 aria-label="Apagar ${esc(it.name)}">${ico.trash} Apagar</button>
@@ -548,7 +560,7 @@
       <div class="fold"><div class="fold-in">
         <ul class="list">${o.items.map(it=>rowHTML(o.scope,o.id,it,o.checkable)).join("")}</ul>
         ${o.extraRow || ``}
-        ${o.hint ? `<p class="swipe-hint">${ico.swipe} Deslize um item para a esquerda para apagar</p>` : ``}
+        ${o.hint ? `<p class="swipe-hint">${ico.swipe} Deslize um item: esquerda apaga, direita marca como paga</p>` : ``}
         <div class="row-foot">
           <button type="button" class="add" data-act="add" data-scope="${o.scope}" data-list="${o.id}">
             ${ico.plus} Adicionar item
@@ -790,9 +802,10 @@
   }
 
   /* ============================================================
-   * DESLIZAR PARA APAGAR
+   * DESLIZAR PARA APAGAR (esquerda) E MARCAR/DESMARCAR (direita)
    * ========================================================= */
   const ACTION_W = 92;
+  const CHECK_TRIGGER = 56;   // distância pra direita que já dispara o toggle
   let drag = null, openRow = null;
   const offOf = el => Number(el.dataset.off || 0);
   function setOff(el,x){ el.dataset.off = x; el.style.transform = "translateX("+x+"px)"; }
@@ -805,6 +818,25 @@
     if(openRow === el) openRow = null;
   }
 
+  function toggleBySwipe(main){
+    const row = main.closest(".row");
+    if(!row) return;
+    const {scope, list, id} = row.dataset;
+    const it = itemOf(scope, list, id);
+    if(!it) return;
+    it.pago = !it.pago; save();
+    row.classList.toggle("paid", it.pago);
+    const chk = main.querySelector('.check[data-act="pay"]');
+    if(chk){
+      chk.setAttribute("aria-checked", it.pago ? "true":"false");
+      chk.classList.add("pulse");
+      setTimeout(()=> chk.classList.remove("pulse"), 260);
+    }
+    const rc = row.querySelector(".row-check");
+    if(rc) rc.innerHTML = it.pago ? ico.uncheck : ico.check;
+    refresh();
+  }
+
   app.addEventListener("touchstart", e=>{
     const main = e.target.closest(".row-main");
     const touchedRow = e.target.closest(".row");
@@ -813,7 +845,8 @@
     // da própria linha aberta não deve fechá-la antes do clique acontecer
     if(openRow && touchedRow !== openRowEl) closeRow(openRow);
     if(!main) return;
-    drag = {main, x:e.touches[0].clientX, y:e.touches[0].clientY, start:offOf(main), dir:null};
+    const checkable = touchedRow ? touchedRow.dataset.checkable === "true" : false;
+    drag = {main, x:e.touches[0].clientX, y:e.touches[0].clientY, start:offOf(main), dir:null, checkable};
     main.classList.remove("animate");
   }, {passive:true});
 
@@ -833,7 +866,10 @@
     if(drag.dir !== "h") return;
     e.preventDefault();
     let x = drag.start + dx;
-    if(x > 0) x *= 0.2;
+    if(x > 0){
+      if(drag.checkable) { if(x > ACTION_W) x = ACTION_W + (x-ACTION_W)*0.25; }
+      else x *= 0.2;                                            // não marcável: só um elástico, sem ação
+    }
     if(x < -ACTION_W) x = -ACTION_W + (x + ACTION_W)*0.25;
     setOff(drag.main, x);
   }, {passive:false});
@@ -843,7 +879,11 @@
     const d = drag; drag = null;
     if(d.dir !== "h") return;
     d.main.classList.add("animate");
-    if(offOf(d.main) < -ACTION_W*0.4){
+    const x = offOf(d.main);
+    if(d.checkable && x > CHECK_TRIGGER){
+      toggleBySwipe(d.main);
+      closeRow(d.main);
+    } else if(x < -ACTION_W*0.4){
       setOff(d.main, -ACTION_W); d.main.classList.add("open"); openRow = d.main;
       if(!state.hintSeen){
         state.hintSeen = true; save();
@@ -1157,7 +1197,10 @@
       const it = itemOf(scope, list, id); if(!it) return;
       it.pago = !it.pago; save();
       el.setAttribute("aria-checked", it.pago ? "true":"false");
-      el.closest(".row").classList.toggle("paid", it.pago);
+      const rowEl = el.closest(".row");
+      rowEl.classList.toggle("paid", it.pago);
+      const rc = rowEl.querySelector(".row-check");
+      if(rc) rc.innerHTML = it.pago ? ico.uncheck : ico.check;
       refresh();
       return;
     }
