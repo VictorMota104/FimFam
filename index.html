@@ -162,7 +162,7 @@
   .row + .row .row-main{border-top:1px solid var(--border);}
   .row-actions{position:absolute; top:0; right:0; bottom:0; width:var(--action-w);
     display:flex; align-items:stretch; visibility:hidden;}
-  .row.swiping .row-actions{visibility:visible;}
+  .row.reveal-right .row-actions{visibility:visible;}
   .row-actions button{flex:1; border:none; background:var(--danger); color:#fff;
     font-family:var(--sans); font-size:14px; font-weight:700;
     display:flex; align-items:center; justify-content:center; gap:5px;}
@@ -177,7 +177,7 @@
     display:flex; align-items:center; justify-content:center;
     background:var(--accent); color:var(--accent-ink); visibility:hidden;}
   .row-check.undo{background:var(--muted); color:#171209;}
-  .row.swiping .row-check{visibility:visible;}
+  .row.reveal-left .row-check{visibility:visible;}
   .row-check svg{width:22px; height:22px;}
 
   .row-main{position:relative; z-index:1; background:var(--surface);
@@ -816,7 +816,15 @@
   const KILL_TRIGGER = -152;   // deslizar bem além do botão já apaga direto
   let drag = null, openRow = null;
   const offOf = el => Number(el.dataset.off || 0);
-  function setOff(el,x){ el.dataset.off = x; el.style.transform = "translateX("+x+"px)"; }
+  function setOff(el,x){
+    el.dataset.off = x;
+    el.style.transform = "translateX("+x+"px)";
+    const row = el.closest(".row");
+    if(row){
+      row.classList.toggle("reveal-right", x < -0.5);   // deslocou pra esquerda: mostra "Apagar" à direita
+      row.classList.toggle("reveal-left", x > 0.5);      // deslocou pra direita: mostra o check à esquerda
+    }
+  }
   function closeRow(el, animate){
     if(!el) return;
     if(animate !== false) el.classList.add("animate");
