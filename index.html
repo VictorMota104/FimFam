@@ -172,13 +172,6 @@
   .row.armed .row-actions button svg{animation:killTick .32s var(--ease);}
   @keyframes killTick{0%{transform:scale(1);}50%{transform:scale(1.35);}100%{transform:scale(1);}}
 
-  /* espelho do painel de apagar: deslizar pra direita marca/desmarca */
-  .row-check{position:absolute; top:0; left:0; bottom:0; width:var(--action-w);
-    display:flex; align-items:center; justify-content:center;
-    background:var(--accent); color:var(--accent-ink); visibility:hidden;}
-  .row-check.undo{background:var(--muted); color:#171209;}
-  .row.reveal-left .row-check{visibility:visible;}
-
   .row-main{position:relative; z-index:1; background:var(--surface);
     display:flex; align-items:center; gap:12px; min-height:56px; padding:6px 16px;
     touch-action:pan-y;}
@@ -552,7 +545,6 @@
     return `
     <li class="row ${checkable && it.pago ? 'paid':''}" data-scope="${scope}" data-list="${listId}" data-id="${it.id}"
         data-checkable="${checkable ? 'true':'false'}">
-      ${checkable ? `<div class="row-check ${it.pago ? 'undo':''}" aria-hidden="true"></div>` : ``}
       <div class="row-actions">
         <button type="button" data-act="del" data-scope="${scope}" data-list="${listId}" data-id="${it.id}"
                 aria-label="Apagar ${esc(it.name)}">${ico.trash} Apagar</button>
@@ -874,8 +866,6 @@
       chk.classList.add("pulse");
       setTimeout(()=> chk.classList.remove("pulse"), 260);
     }
-    const rc = row.querySelector(".row-check");
-    if(rc) rc.classList.toggle("undo", it.pago);
     refresh();
   }
 
@@ -1345,8 +1335,6 @@
       el.setAttribute("aria-checked", it.pago ? "true":"false");
       const rowEl = el.closest(".row");
       rowEl.classList.toggle("paid", it.pago);
-      const rc = rowEl.querySelector(".row-check");
-      if(rc) rc.classList.toggle("undo", it.pago);
       refresh();
       return;
     }
