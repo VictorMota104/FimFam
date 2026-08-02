@@ -301,23 +301,23 @@
   .toast.show{transform:translateY(0);}
   .toast[hidden]{display:none;}
 
-  /* bolha que segue o dedo no gesto de borda, no mesmo estilo dos carimbos PF/PJ */
+  /* aba grudada na borda direita, que cresce pra fora conforme o dedo puxa —
+     não flutua livre: só acompanha a altura (Y) do toque, presa ao canto */
   .edge-bubble{
-    position:fixed; z-index:95; width:76px; height:76px; margin:-38px 0 0 -38px;
-    border-radius:50%; border:2px solid var(--muted-2); background:var(--surface-3);
-    display:flex; align-items:center; justify-content:center;
+    position:fixed; z-index:95; right:-2px; top:0; height:60px; width:0;
+    transform:translateY(-50%);
+    background:var(--surface-3); border:2px solid var(--muted-2); border-right:none;
+    border-radius:30px 0 0 30px;
+    display:flex; align-items:center; justify-content:flex-end; padding-right:16px;
+    overflow:hidden; white-space:nowrap; pointer-events:none;
     font-family:var(--serif); font-weight:700; font-size:14px; letter-spacing:.6px;
-    color:var(--muted); text-transform:uppercase; pointer-events:none;
-    opacity:0; transform:scale(.7);
-    transition:opacity .16s var(--ease), transform .16s var(--ease),
-               background .16s var(--ease), color .16s var(--ease), border-color .16s var(--ease);
-    box-shadow:0 8px 22px rgba(0,0,0,.4);
+    color:var(--muted); text-transform:uppercase;
+    box-shadow:-6px 0 18px rgba(0,0,0,.35);
   }
   .edge-bubble[hidden]{display:none;}
-  .edge-bubble::before{content:""; position:absolute; inset:6px; border:1.5px dashed currentColor;
-    border-radius:50%; opacity:.5;}
-  .edge-bubble.show{opacity:1; transform:scale(1);}
-  .edge-bubble.armed{background:var(--bubble-accent); color:var(--bubble-ink); border-color:transparent; transform:scale(1.14);}
+  .edge-bubble.settle{transition:width .22s var(--ease), background .16s var(--ease),
+    color .16s var(--ease), border-color .16s var(--ease);}
+  .edge-bubble.armed{background:var(--bubble-accent); color:var(--bubble-ink); border-color:transparent;}
   .toast span{font-size:14px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .toast button{flex-shrink:0; min-height:36px; padding:0 14px; border-radius:9px; border:none;
     background:var(--accent); color:var(--accent-ink);
@@ -1184,6 +1184,7 @@
   (function edgeSwipe(){
     const EDGE_ZONE = 24;   // só começa se o toque nascer perto da borda direita da tela
     const TRIGGER = 70;     // distância mínima puxando pra dentro que confirma a troca
+    const MAX_W = 108;      // até onde a aba cresce visualmente
     let eg = null;
     const bubble = document.getElementById("edgeBubble");
 
@@ -1193,9 +1194,10 @@
         ? {label:"PF", accent:"#6FAE87", ink:"#0B1C13"}
         : {label:"PJ", accent:"#C99A3E", ink:"#241804"};
     }
-    function hideBubble(){
-      bubble.classList.remove("show","armed");
-      setTimeout(()=>{ bubble.hidden = true; }, 180);
+    function settle(width){
+      bubble.classList.add("settle");
+      bubble.style.width = width + "px";
+      setTimeout(()=>{ bubble.classList.remove("settle"); if(width===0) bubble.hidden = true; }, 230);
     }
 
     document.addEventListener("touchstart", e=>{
@@ -1214,15 +1216,17 @@
         eg.dir = Math.abs(dx) > Math.abs(dy)*1.2 ? "h" : "v";
         if(eg.dir !== "h"){ eg = null; return; }
         const info = targetInfo();
+        bubble.classList.remove("settle");
         bubble.textContent = info.label;
         bubble.style.setProperty("--bubble-accent", info.accent);
         bubble.style.setProperty("--bubble-ink", info.ink);
+        bubble.style.top = t.clientY + "px";
         bubble.hidden = false;
-        requestAnimationFrame(()=> bubble.classList.add("show"));
       }
       if(eg.dir !== "h") return;
-      bubble.style.left = t.clientX + "px";
-      bubble.style.top = t.clientY + "px";
+      bubble.style.top = t.clientY + "px";                  // só a altura acompanha o dedo
+      const w = Math.max(0, Math.min(MAX_W, -dx));
+      bubble.style.width = w + "px";                        // a largura cresce presa na borda
       const armed = dx <= -TRIGGER;
       if(armed !== eg.armed){ eg.armed = armed; bubble.classList.toggle("armed", armed); }
     }, {passive:true});
@@ -1234,13 +1238,13 @@
       const wasH = eg.dir === "h";
       const wasArmed = eg.armed;
       eg = null;
-      if(wasH) hideBubble();
+      if(wasH) settle(0);
       if(wasH && wasArmed && dx <= -TRIGGER){
         switchView(state.view === "pf" ? "pj" : "pf");
       }
     }
     document.addEventListener("touchend", endEdge, {passive:true});
-    document.addEventListener("touchcancel", ()=>{ if(eg){ hideBubble(); eg = null; } }, {passive:true});
+    document.addEventListener("touchcancel", ()=>{ if(eg){ settle(0); eg = null; } }, {passive:true});
   })();
 
   /* ============================================================
