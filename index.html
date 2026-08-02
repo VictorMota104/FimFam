@@ -822,7 +822,15 @@
     if(animate !== false) el.classList.add("animate");
     setOff(el,0); el.classList.remove("open");
     const row = el.closest(".row");
-    if(row) setTimeout(()=>{ if(offOf(el)===0) row.classList.remove("swiping"); }, 280);
+    if(row){
+      const actions = row.querySelector(".row-actions");
+      if(actions){
+        if(animate !== false) actions.style.transition = "width .22s var(--ease)";
+        actions.style.width = "";
+        if(animate !== false) setTimeout(()=>{ actions.style.transition = ""; }, 230);
+      }
+      setTimeout(()=>{ if(offOf(el)===0) row.classList.remove("swiping"); }, 280);
+    }
     if(openRow === el) openRow = null;
   }
 
@@ -854,7 +862,8 @@
     if(openRow && touchedRow !== openRowEl) closeRow(openRow);
     if(!main) return;
     const checkable = touchedRow ? touchedRow.dataset.checkable === "true" : false;
-    drag = {main, x:e.touches[0].clientX, y:e.touches[0].clientY, start:offOf(main), dir:null, checkable};
+    const actions = touchedRow ? touchedRow.querySelector(".row-actions") : null;
+    drag = {main, x:e.touches[0].clientX, y:e.touches[0].clientY, start:offOf(main), dir:null, checkable, actions};
     main.classList.remove("animate");
   }, {passive:true});
 
@@ -878,10 +887,14 @@
       if(drag.checkable) { if(x > ACTION_W) x = ACTION_W + (x-ACTION_W)*0.25; }
       else x *= 0.2;                                            // não marcável: só um elástico, sem ação
     }
-    if(x < -ACTION_W) x = -ACTION_W + (x + ACTION_W)*0.25;
+    if(x < -ACTION_W) x = -ACTION_W + (x + ACTION_W)*0.5;   // resistência mais leve: o limite fica alcançável de verdade
     setOff(drag.main, x);
     const row = drag.main.closest(".row");
     if(row) row.classList.toggle("armed", x <= KILL_TRIGGER);
+    // o botão "Apagar" cresce pra preencher o espaço revelado — fica óbvio até onde ir
+    if(drag.actions){
+      drag.actions.style.width = x < -ACTION_W ? Math.min(320, -x) + "px" : "";
+    }
   }, {passive:false});
 
   function commitDelete(main){
@@ -910,6 +923,14 @@
       closeRow(d.main);
     } else if(x < -ACTION_W*0.4){
       setOff(d.main, -ACTION_W); d.main.classList.add("open"); openRow = d.main;
+      if(row){
+        const actions = row.querySelector(".row-actions");
+        if(actions){
+          actions.style.transition = "width .22s var(--ease)";
+          actions.style.width = "";
+          setTimeout(()=>{ actions.style.transition = ""; }, 230);
+        }
+      }
       if(!state.hintSeen){
         state.hintSeen = true; save();
         const h = app.querySelector(".swipe-hint"); if(h) h.remove();
