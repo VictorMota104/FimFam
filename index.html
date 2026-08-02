@@ -70,7 +70,7 @@
   }
   .brand{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:12px;}
   .brand h1{font-size:20px; margin:0; font-weight:700; letter-spacing:-.2px;}
-  .brand .month{color:var(--muted); font-size:12px; font-weight:600; text-transform:capitalize;}
+  .brand .month{color:var(--muted); font-size:12px; font-weight:600;}
 
   /* ---------- seletor PF/PJ ---------- */
   .switch{
@@ -178,7 +178,9 @@
   .row-actions{
     position:absolute; top:0; right:0; bottom:0; width:var(--action-w);
     display:flex; align-items:stretch;
+    visibility:hidden;   /* só existe durante o gesto — evita vazar na rolagem do iOS */
   }
+  .row.swiping .row-actions{ visibility:visible; }
   .row-actions button{
     flex:1; border:none; background:var(--danger); color:#fff;
     font-family:var(--sans); font-size:14px; font-weight:700;
@@ -191,8 +193,9 @@
     display:flex; align-items:center; gap:12px;
     min-height:56px; padding:6px 16px;
     touch-action:pan-y;                 /* deixa a rolagem vertical nativa */
-    will-change:transform;
   }
+  /* camada de composição só enquanto arrasta; permanente quebra o recorte no iOS */
+  .row.swiping .row-main{ will-change:transform; }
   .row-main.animate{transition:transform .26s var(--ease);}
   /* quando aberta, um toque em qualquer parte fecha em vez de focar o campo */
   .row-main.open::after{content:""; position:absolute; inset:0; z-index:5;}
@@ -326,6 +329,7 @@
     transform:translateY(140%); transition:transform .3s var(--ease);
     max-width:508px; margin:0 auto;
   }
+  .toast[hidden]{display:none;}   /* precisa vir depois: display:flex ignora o atributo hidden */
   .toast.show{transform:translateY(0);}
   .toast span{font-size:14px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .toast button{
@@ -657,7 +661,8 @@
   }
 
   function render(){
-    const mes = new Date().toLocaleDateString("pt-BR",{month:"long", year:"numeric"});
+    let mes = new Date().toLocaleDateString("pt-BR",{month:"long", year:"numeric"});
+    mes = mes.charAt(0).toUpperCase() + mes.slice(1);   // "Agosto de 2026", não "Agosto De 2026"
     app.dataset.view = state.view;
     app.innerHTML = `
       <header class="top">
@@ -768,6 +773,11 @@
     if(animate !== false) el.classList.add("animate");
     setOff(el, 0);
     el.classList.remove("open");
+    const row = el.closest(".row");
+    if(row){
+      // espera a animação terminar antes de esconder o botão
+      setTimeout(()=>{ if(offOf(el) === 0) row.classList.remove("swiping"); }, 280);
+    }
     if(openRow === el) openRow = null;
   }
 
@@ -786,8 +796,12 @@
     if(!drag.dir){
       if(Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
       drag.dir = Math.abs(dx) > Math.abs(dy) * 1.15 ? "h" : "v";
-      if(drag.dir === "h" && document.activeElement && document.activeElement.blur){
-        document.activeElement.blur();       // fecha o teclado antes de arrastar
+      if(drag.dir === "h"){
+        const row = drag.main.closest(".row");
+        if(row) row.classList.add("swiping");
+        if(document.activeElement && document.activeElement.blur){
+          document.activeElement.blur();     // fecha o teclado antes de arrastar
+        }
       }
     }
     if(drag.dir !== "h") return;
