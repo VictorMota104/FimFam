@@ -779,7 +779,11 @@
 
   app.addEventListener("touchstart", e=>{
     const main = e.target.closest(".row-main");
-    if(openRow && openRow !== main) closeRow(openRow);
+    const touchedRow = e.target.closest(".row");
+    const openRowEl = openRow ? openRow.closest(".row") : null;
+    // só fecha se o toque foi em OUTRA linha — tocar no botão "Apagar"
+    // da própria linha aberta não deve fechá-la antes do clique acontecer
+    if(openRow && touchedRow !== openRowEl) closeRow(openRow);
     if(!main) return;
     drag = {main, x:e.touches[0].clientX, y:e.touches[0].clientY, start:offOf(main), dir:null};
     main.classList.remove("animate");
