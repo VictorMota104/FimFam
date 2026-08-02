@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Finanças · PF/PJ</title>
-<meta name="theme-color" content="#0B1220">
+<meta name="theme-color" content="#14100B">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Finanças">
@@ -13,13 +13,18 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
   :root{
-    --bg:#0B1220; --surface:#141B2E; --surface-2:#1B2439; --surface-3:#222C45;
-    --border:#2A3550; --text:#ECF1FA; --muted:#8A94AC; --muted-2:#606B85;
-    --pf:#35D0A8; --pf-ink:#04231B;
-    --pj:#F2B84B; --pj-ink:#2A1D00;
-    --danger:#FF5C5C;
+    /* tons de tinta sobre papel de ledger — não é o azul-marinho + neon padrão */
+    --bg:#100C08;
+    --surface:#221B12; --surface-2:#2A2116; --surface-3:#33281A;
+    --border:#3C3020; --text:#F1E9D8; --muted:#A99C82; --muted-2:#786C54;
+
+    --pf:#6FAE87; --pf-ink:#0B1C13;      /* verde-cédula */
+    --pj:#C99A3E; --pj-ink:#241804;      /* ocre de carimbo */
+    --danger:#C1543C;                     /* tijolo, não vermelho neon */
+
     --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, monospace;
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --serif: ui-serif, "New York", Georgia, "Times New Roman", serif;   /* voz do app: títulos e rótulos */
     --tap:44px; --action-w:92px;
     --ease: cubic-bezier(.22,.8,.26,1);
   }
@@ -27,16 +32,23 @@
   [data-view="pj"]{ --accent:var(--pj); --accent-ink:var(--pj-ink); }
 
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html{-webkit-text-size-adjust:100%;}
+  html{-webkit-text-size-adjust:100%; background:var(--bg);}
   body{
-    margin:0; background:var(--bg); color:var(--text); font-family:var(--sans);
+    margin:0; color:var(--text); font-family:var(--sans); background:var(--bg);
+    position:relative;
     overscroll-behavior-y:contain;
     -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
     padding:env(safe-area-inset-top) env(safe-area-inset-right)
             calc(env(safe-area-inset-bottom) + 40px) env(safe-area-inset-left);
   }
+  /* vinheta quente e fixa — não é um gradiente que rola com a página */
+  body::before{
+    content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:radial-gradient(900px 480px at 50% -8%, #241B10, transparent 62%);
+  }
   input{-webkit-user-select:text; user-select:text;}
   .app{max-width:540px; margin:0 auto; padding:0 16px;}
+
 
   /* cabeçalho */
   header.top{position:sticky; top:0; z-index:30; background:var(--bg);
@@ -44,16 +56,32 @@
   header.top::after{content:""; position:absolute; left:0; right:0; bottom:-18px; height:18px;
     background:linear-gradient(180deg,var(--bg),transparent); pointer-events:none;}
   .brand{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:12px;}
-  .brand h1{font-size:20px; margin:0; font-weight:700; letter-spacing:-.2px;}
+  .brand h1{font-family:var(--serif); font-size:23px; margin:0; font-weight:600; letter-spacing:-.2px;}
   .brand .month{color:var(--muted); font-size:12px; font-weight:600;}
 
-  .switch{display:flex; background:var(--surface); border:1px solid var(--border);
-    border-radius:14px; padding:4px; gap:4px;}
-  .switch button{flex:1; min-height:var(--tap); border:none; background:transparent;
-    color:var(--muted); font-size:15px; font-weight:600; font-family:var(--sans);
-    border-radius:10px; transition:background .2s var(--ease), color .2s var(--ease);}
-  .switch button[aria-selected="true"]{background:var(--accent); color:var(--accent-ink);}
-  .switch button:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  /* o par de carimbos PF/PJ — a peça de assinatura do app */
+  .switch{display:flex; justify-content:center; gap:22px; padding:10px 6px 6px;}
+  .stamp{
+    --rot:0deg;
+    position:relative; flex:0 1 156px; min-height:64px; padding:0 14px;
+    border:2px solid var(--muted-2); border-radius:14px; background:transparent;
+    color:var(--muted); font-family:var(--serif); font-size:13.5px; font-weight:600;
+    letter-spacing:.4px; line-height:1.28; text-transform:uppercase;
+    transform:rotate(var(--rot));
+    transition:transform .22s var(--ease), background .22s var(--ease),
+               color .22s var(--ease), border-color .22s var(--ease), box-shadow .22s var(--ease);
+  }
+  .stamp::before{content:""; position:absolute; inset:5px; border:1.5px dashed currentColor;
+    border-radius:9px; opacity:.5; pointer-events:none;}
+  .stamp[data-view="pf"]{ --rot:-3deg; }
+  .stamp[data-view="pj"]{ --rot:2.5deg; }
+  .stamp[aria-selected="true"]{
+    background:var(--accent); color:var(--accent-ink); border-color:var(--accent);
+    transform:rotate(calc(var(--rot) * .35)) scale(.97);
+    box-shadow:0 3px 0 rgba(0,0,0,.28);
+  }
+  .stamp:active{ transform:rotate(calc(var(--rot) * .35)) scale(.93); }
+  .stamp:focus-visible{outline:2px solid var(--accent); outline-offset:3px;}
 
   /* resumo */
   .summary{background:var(--surface); border:1px solid var(--border);
@@ -110,7 +138,7 @@
   .card-head{flex:1; min-width:0; display:flex; align-items:center; justify-content:space-between;
     min-height:56px; padding:0 6px 0 16px; background:transparent; border:none;
     color:var(--text); font-family:var(--sans); text-align:left;}
-  .card-head .hl{display:flex; align-items:center; gap:10px; font-weight:700; font-size:15px; min-width:0;}
+  .card-head .hl{display:flex; align-items:center; gap:10px; font-weight:600; font-size:16px; min-width:0; font-family:var(--serif);}
   .card-head .hl span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .card-head .dot{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
   .card-head .hr{display:flex; align-items:center; gap:8px; flex-shrink:0;}
@@ -277,7 +305,7 @@
   .sheet.show{transform:translateY(0);}
   .sheet[hidden]{display:none;}
   .grip{width:38px; height:4px; border-radius:99px; background:var(--border); margin:2px auto 14px;}
-  .sheet h2{margin:0 0 14px; font-size:16px; font-weight:700;}
+  .sheet h2{margin:0 0 14px; font-size:18px; font-weight:600; font-family:var(--serif);}
   .sheet label.lbl{display:block; color:var(--muted); font-size:11.5px; font-weight:700;
     letter-spacing:.8px; text-transform:uppercase; margin:0 0 7px;}
   .sheet-input{width:100%; height:50px; padding:0 14px; border-radius:12px;
@@ -343,7 +371,7 @@
   }
   const uid = ()=> Math.random().toString(36).slice(2,9);
 
-  const CORES = ["#35D0A8","#6AA9FF","#F2B84B","#FF5C5C","#C084FC","#22D3EE","#A3E635","#FB923C"];
+  const CORES = ["#6FAE87","#6F93B8","#C99A3E","#C1543C","#8B7BB0","#5FA3A3","#8FA05C","#B6795A"];
 
   /* ============================================================
    * ESTADO
@@ -356,12 +384,12 @@
         incluirProLabore:true,
         open:{__rendas:true, fixas:true, assinaturas:true, investimentos:true, cartao:true},
         categories:[
-          {id:"fixas", name:"Contas Fixas", color:"#35D0A8", items:[
+          {id:"fixas", name:"Contas Fixas", color:"#6FAE87", items:[
             {id:uid(), name:"Dass", valor:0, pago:true},
             {id:uid(), name:"Apartamento", valor:1560, pago:false},
             {id:uid(), name:"Ajuda em casa", valor:700, pago:false},
             {id:uid(), name:"Inglês", valor:0, pago:false}]},
-          {id:"assinaturas", name:"Assinaturas", color:"#6AA9FF", items:[
+          {id:"assinaturas", name:"Assinaturas", color:"#6F93B8", items:[
             {id:uid(), name:"Claude", valor:109, pago:false},
             {id:uid(), name:"YouTube", valor:24, pago:false},
             {id:uid(), name:"iCloud", valor:9, pago:false},
@@ -370,11 +398,11 @@
             {id:uid(), name:"Tim", valor:60, pago:false},
             {id:uid(), name:"Apple", valor:20, pago:false},
             {id:uid(), name:"Hostinger", valor:0, pago:false}]},
-          {id:"investimentos", name:"Investimentos", color:"#F2B84B", items:[
+          {id:"investimentos", name:"Investimentos", color:"#C99A3E", items:[
             {id:uid(), name:"Bolão 2026", valor:250, pago:true},
             {id:uid(), name:"Férias", valor:500, pago:true},
             {id:uid(), name:"Reserva de emergência", valor:500, pago:true}]},
-          {id:"cartao", name:"Cartão de Crédito", color:"#FF5C5C", items:[
+          {id:"cartao", name:"Cartão de Crédito", color:"#C1543C", items:[
             {id:uid(), name:"Itaú", valor:1763, pago:false},
             {id:uid(), name:"Nubank", valor:500, pago:false}]},
         ]
@@ -384,8 +412,8 @@
         taxaProLabore:0.28, taxaDAS:0.06, taxaINSS:0.11,
         open:{fixas:true, variaveis:true},
         categories:[
-          {id:"fixas", name:"Custos fixos", color:"#F2B84B", items:[{id:uid(), name:"Contador", valor:250}]},
-          {id:"variaveis", name:"Variáveis", color:"#6AA9FF", items:[{id:uid(), name:"Abertura ME", valor:250}]},
+          {id:"fixas", name:"Custos fixos", color:"#C99A3E", items:[{id:uid(), name:"Contador", valor:250}]},
+          {id:"variaveis", name:"Variáveis", color:"#6F93B8", items:[{id:uid(), name:"Abertura ME", valor:250}]},
         ]
       }
     };
@@ -409,8 +437,8 @@
       s.pj.categories = [];
       const fixas = Array.isArray(s.pj.fixas) ? s.pj.fixas
                   : (s.pj.contador != null ? [{id:uid(), name:"Contador", valor:s.pj.contador}] : []);
-      s.pj.categories.push({id:"fixas", name:"Custos fixos", color:"#F2B84B", items:fixas});
-      s.pj.categories.push({id:"variaveis", name:"Variáveis", color:"#6AA9FF",
+      s.pj.categories.push({id:"fixas", name:"Custos fixos", color:"#C99A3E", items:fixas});
+      s.pj.categories.push({id:"variaveis", name:"Variáveis", color:"#6F93B8",
                             items: Array.isArray(s.pj.variaveis) ? s.pj.variaveis : []});
     }
     delete s.pj.fixas; delete s.pj.variaveis; delete s.pj.contador;
@@ -577,7 +605,7 @@
       </div>
     </section>
 
-    ${cardHTML({scope:"pf", id:"__rendas", name:"Receitas", color:"#35D0A8",
+    ${cardHTML({scope:"pf", id:"__rendas", name:"Receitas", color:"#6FAE87",
                 items:pf.rendas, total:c.receitas, open:!!pf.open.__rendas,
                 checkable:false, fixed:true, extraRow:proRow})}
 
@@ -671,8 +699,8 @@
       <header class="top">
         <div class="brand"><h1>Finanças</h1><span class="month">${mes}</span></div>
         <div class="switch" role="tablist" aria-label="Tipo de conta">
-          <button type="button" role="tab" aria-selected="${state.view==='pf'}" data-act="view" data-view="pf">Pessoa Física</button>
-          <button type="button" role="tab" aria-selected="${state.view==='pj'}" data-act="view" data-view="pj">Pessoa Jurídica</button>
+          <button type="button" role="tab" class="stamp" aria-selected="${state.view==='pf'}" data-act="view" data-view="pf">Pessoa<br>Física</button>
+          <button type="button" role="tab" class="stamp" aria-selected="${state.view==='pj'}" data-act="view" data-view="pj">Pessoa<br>Jurídica</button>
         </div>
       </header>
       <main>${state.view==="pf" ? viewPF() : viewPJ()}</main>
@@ -849,6 +877,31 @@
     toastT = setTimeout(hideToast, 5000);
   }
 
+  // arrastar o aviso pra baixo fecha na hora, sem esperar os 5s
+  (function toastSwipe(){
+    let sy=0, moved=false, active=false;
+    toast.addEventListener("touchstart", e=>{
+      active = true; moved = false; sy = e.touches[0].clientY;
+      toast.style.transition = "none";
+    }, {passive:true});
+    toast.addEventListener("touchmove", e=>{
+      if(!active) return;
+      const dy = e.touches[0].clientY - sy;
+      if(dy > 6) moved = true;
+      if(moved) toast.style.transform = `translateY(${Math.max(0,dy)}px)`;
+    }, {passive:true});
+    function end(e){
+      if(!active) return;
+      active = false;
+      toast.style.transition = "";
+      const dy = (e.changedTouches ? e.changedTouches[0].clientY : sy) - sy;
+      toast.style.transform = "";
+      if(moved && dy > 46) hideToast();
+    }
+    toast.addEventListener("touchend", end, {passive:true});
+    toast.addEventListener("touchcancel", end, {passive:true});
+  })();
+
   function removeItem(scope, listId, id){
     const list = listOf(scope, listId);
     if(!list) return;
@@ -968,20 +1021,43 @@
     save();
   }
 
-  scrim.addEventListener("click", ()=>{
-    if(sheetCtx && sheetCtx.isNew){
-      const nome = sheet.querySelector("#secName");
-      const cat = sectOf(sheetCtx.scope, sheetCtx.listId);
-      if(cat) cat.name = (nome && nome.value.trim()) || "Sem nome";
-      save();
-    } else if(sheetCtx){
+  // fecha salvando o nome digitado até então — usado ao tocar fora ou ao arrastar pra baixo
+  function dismissSheet(){
+    if(sheetCtx){
       const nome = sheet.querySelector("#secName");
       const cat = sectOf(sheetCtx.scope, sheetCtx.listId);
       if(cat && nome) cat.name = nome.value.trim() || "Sem nome";
       save();
     }
     closeSheet(); render();
-  });
+  }
+  scrim.addEventListener("click", dismissSheet);
+
+  // arrastar a folha pra baixo fecha — não inicia sobre campo, botão ou cor
+  (function sheetSwipe(){
+    let sy=0, moved=false, active=false;
+    sheet.addEventListener("touchstart", e=>{
+      if(e.target.closest("input, button, .sw")) return;
+      active = true; moved = false; sy = e.touches[0].clientY;
+      sheet.style.transition = "none";
+    }, {passive:true});
+    sheet.addEventListener("touchmove", e=>{
+      if(!active) return;
+      const dy = e.touches[0].clientY - sy;
+      if(dy > 6) moved = true;
+      if(moved) sheet.style.transform = `translateY(${Math.max(0,dy)}px)`;
+    }, {passive:true});
+    function end(e){
+      if(!active) return;
+      active = false;
+      sheet.style.transition = "";
+      const dy = (e.changedTouches ? e.changedTouches[0].clientY : sy) - sy;
+      sheet.style.transform = "";
+      if(moved && dy > 90) dismissSheet();
+    }
+    sheet.addEventListener("touchend", end, {passive:true});
+    sheet.addEventListener("touchcancel", end, {passive:true});
+  })();
 
   /* ============================================================
    * BARRA CONCLUIR
