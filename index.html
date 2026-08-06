@@ -85,11 +85,22 @@
 
   /* resumo */
   .summary{background:var(--surface); border:1px solid var(--border);
-    border-radius:20px; padding:18px; margin-top:14px;}
+    border-radius:22px; padding:22px 20px; margin-top:20px;
+    box-shadow:0 14px 36px -12px rgba(0,0,0,.5), 0 1px 0 rgba(255,255,255,.03) inset;}
   .sum-line{display:flex; justify-content:space-between; align-items:center; min-height:38px; gap:10px;}
   .sum-line .k{color:var(--muted); font-size:12px; font-weight:700; letter-spacing:.7px; text-transform:uppercase;}
   .sum-line .v{font-family:var(--mono); font-size:17px; font-variant-numeric:tabular-nums;}
   .sum-line .v.muted{color:var(--muted);}
+
+  /* par de chips de estatística (Receitas/Despesas) — mais "painel", menos "linha de lista" */
+  .stat-pair{display:flex; gap:10px;}
+  .stat-chip{flex:1; min-width:0; background:var(--surface-2); border:1px solid var(--border);
+    border-radius:14px; padding:11px 14px;}
+  .stat-chip .sc-k{display:block; color:var(--muted); font-size:10.5px; font-weight:700;
+    letter-spacing:.6px; text-transform:uppercase; margin-bottom:3px;}
+  .stat-chip .sc-v{display:block; font-family:var(--mono); font-size:16.5px; font-weight:600;
+    font-variant-numeric:tabular-nums; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .stat-chip .sc-v.muted{color:var(--muted);}
 
   .inline-field{display:flex; align-items:center; justify-content:flex-end; gap:5px;
     min-height:var(--tap); padding:0 10px; margin-right:-10px;
@@ -104,39 +115,40 @@
   .edit-hint{width:14px; height:14px; flex-shrink:0; color:var(--muted-2); transition:color .15s var(--ease);}
   .inline-field:focus-within .edit-hint{color:var(--accent);}
 
-  .perf{position:relative; height:0; border-top:2px dashed var(--border); margin:16px 0;}
+  .perf{position:relative; height:0; border-top:2px dashed var(--border); margin:20px 0;}
   .perf::before,.perf::after{content:""; position:absolute; top:-8px; width:16px; height:16px;
     border-radius:50%; background:var(--bg);}
-  .perf::before{left:-27px;} .perf::after{right:-27px;}
+  .perf::before{left:-29px;} .perf::after{right:-29px;}
 
-  .hero{text-align:center; padding:2px 0 4px;}
-  .hero .k{color:var(--muted); font-size:11px; letter-spacing:1.4px; text-transform:uppercase; font-weight:700;}
-  .hero .v{font-family:var(--mono); font-size:38px; font-weight:700;
-    font-variant-numeric:tabular-nums; letter-spacing:-1.5px; margin-top:4px; line-height:1.1;}
+  .hero{text-align:center; padding:4px 0 6px;}
+  .hero .k{color:var(--muted); font-size:11px; letter-spacing:1.6px; text-transform:uppercase; font-weight:700;}
+  .hero .v{font-family:var(--mono); font-size:50px; font-weight:700;
+    font-variant-numeric:tabular-nums; letter-spacing:-2px; margin-top:6px; line-height:1.02;}
   .hero .v.pos{color:var(--accent);} .hero .v.neg{color:var(--danger);}
 
-  .meter{height:7px; border-radius:99px; background:var(--surface-2); margin-top:16px; overflow:hidden;}
+  .meter{height:7px; border-radius:99px; background:var(--surface-2); margin-top:20px; overflow:hidden;}
   .meter > i{display:block; height:100%; border-radius:99px; background:var(--accent);
     transition:width .35s var(--ease), background .3s;}
   .meter > i.over{background:var(--danger);}
   .stats{display:flex; justify-content:space-between; margin-top:11px; font-size:12px; color:var(--muted); gap:10px;}
   .stats b{color:var(--text); font-family:var(--mono);}
 
-  .split{margin-top:16px; display:flex; flex-direction:column; gap:9px;}
+  .split{margin-top:20px; display:flex; flex-direction:column; gap:11px;}
   .split-row{display:flex; align-items:center; gap:10px;}
   .split-row .sk{width:96px; flex-shrink:0; font-size:12px; color:var(--muted);
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .split-track{flex:1; height:8px; background:var(--surface-2); border-radius:99px; overflow:hidden;}
+  .split-track{flex:1; height:9px; background:var(--surface-2); border-radius:99px; overflow:hidden;}
   .split-track > i{display:block; height:100%; border-radius:99px; transition:width .35s var(--ease);}
   .split-row .sv{width:70px; flex-shrink:0; text-align:right; font-family:var(--mono);
     font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums;}
 
   /* cartões */
   .card{background:var(--surface); border:1px solid var(--border); border-radius:18px;
-    margin-top:12px; overflow:hidden;}
+    margin-top:16px; overflow:hidden;
+    box-shadow:inset 3px 0 0 0 var(--cat-color, transparent), 0 10px 26px -16px rgba(0,0,0,.55);}
   .card-top{display:flex; align-items:stretch;}
   .card-head{flex:1; min-width:0; display:flex; align-items:center; justify-content:space-between;
-    min-height:56px; padding:0 6px 0 16px; background:transparent; border:none;
+    min-height:60px; padding:0 6px 0 19px; background:transparent; border:none;
     color:var(--text); font-family:var(--sans); text-align:left;}
   .card-head .hl{display:flex; align-items:center; gap:10px; font-weight:600; font-size:16px; min-width:0; font-family:var(--serif);}
   .card-head .hl span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
@@ -237,11 +249,12 @@
 
   /* taxas PJ */
   .panel{background:var(--surface); border:1px solid var(--border); border-radius:18px;
-    margin-top:12px; padding:4px 16px 12px;}
-  .panel > h2, .receipt > h2{margin:14px 0 4px; font-size:11.5px; color:var(--muted);
+    margin-top:16px; padding:5px 18px 13px;
+    box-shadow:0 10px 26px -16px rgba(0,0,0,.55);}
+  .panel > h2, .receipt > h2{margin:15px 0 4px; font-size:11.5px; color:var(--muted);
     text-transform:uppercase; letter-spacing:1px; font-weight:700;}
   .rate{display:flex; align-items:center; justify-content:space-between; gap:12px;
-    min-height:60px; border-top:1px solid var(--border);}
+    min-height:62px; border-top:1px solid var(--border);}
   .panel .rate:first-of-type{border-top:none;}
   .rate .rk{min-width:0;}
   .rate .rk b{display:block; font-size:15px; font-weight:600;}
@@ -260,9 +273,10 @@
 
   /* recibos */
   .receipt{background:var(--surface); border:1px solid var(--border); border-radius:18px;
-    margin-top:12px; padding:4px 16px 14px;}
+    margin-top:16px; padding:5px 18px 15px;
+    box-shadow:0 10px 26px -16px rgba(0,0,0,.55);}
   .rline{display:flex; justify-content:space-between; align-items:baseline; gap:12px;
-    padding:9px 0; font-size:14.5px; border-top:1px dashed var(--border);}
+    padding:10px 0; font-size:14.5px; border-top:1px dashed var(--border);}
   .receipt .rline:first-of-type{border-top:none;}
   .rline .rv{font-family:var(--mono); font-variant-numeric:tabular-nums; flex-shrink:0;}
   .rline.calc .rk{color:var(--muted);}
@@ -564,7 +578,7 @@
 
   function cardHTML(o){
     return `
-    <section class="card ${o.open?'open':''}">
+    <section class="card ${o.open?'open':''}" style="--cat-color:${o.color}">
       <div class="card-top">
         <button type="button" class="card-head" data-act="fold" data-scope="${o.scope}" data-list="${o.id}"
                 aria-expanded="${o.open?'true':'false'}">
@@ -605,13 +619,15 @@
 
     return `
     <section class="summary">
-      <div class="sum-line">
-        <span class="k">Receitas</span>
-        <span class="v" data-out="pf-receitas">R$ ${fmt(c.receitas)}</span>
-      </div>
-      <div class="sum-line">
-        <span class="k">Despesas</span>
-        <span class="v muted" data-out="pf-despesas">R$ ${fmt(c.despesas)}</span>
+      <div class="stat-pair">
+        <div class="stat-chip">
+          <span class="sc-k">Receitas</span>
+          <span class="sc-v" data-out="pf-receitas">R$ ${fmt(c.receitas)}</span>
+        </div>
+        <div class="stat-chip">
+          <span class="sc-k">Despesas</span>
+          <span class="sc-v muted" data-out="pf-despesas">R$ ${fmt(c.despesas)}</span>
+        </div>
       </div>
       <div class="perf"></div>
       <div class="hero">
